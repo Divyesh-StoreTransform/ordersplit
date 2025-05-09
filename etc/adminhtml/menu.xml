@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+	<add id="Storetransform_OrderSplit::ordersplit" title="Order Split" translate="title" module="Storetransform_OrderSplit" sortOrder="20" parent="Magento_Backend::stores" resource="Storetransform_OrderSplit::config"/>
+        <add id="Storetransform_OrderSplit::ordersplit_rule" title="Order Split" translate="title" module="Storetransform_OrderSplit" sortOrder="20" parent="Storetransform_OrderSplit::ordersplit" action="ordersplit/rule/" resource="Storetransform_OrderSplit::config"/>
+    </menu>
+</config>

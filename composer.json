@@ -1,0 +1,17 @@
+{
+    "name": "storetransform/ordersplit",
+    "description": "Order Split",
+    "type": "magento2-module",
+    "version": "1.0.2",
+    "license": [
+        "Commercial"
+    ],
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Storetransform\\OrderSplit\\": ""
+        }
+    }
+}

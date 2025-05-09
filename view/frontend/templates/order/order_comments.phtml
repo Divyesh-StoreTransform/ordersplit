@@ -1,0 +1,58 @@
+<?php /** @var  $block \Magento\Sales\Block\Order\View*/?>
+
+<?php $_history = $block->getOrder()->getVisibleStatusHistory() ?>
+<?php if (count($_history)): ?>
+    <div class="block block-order-details-comments">
+        <div class="block-title"><strong><?= /* @escapeNotVerified */ __('About Your Order') ?></strong></div>
+        <div class="block-content">
+            <dl class="order-comments">
+                <?php foreach ($_history as $_historyItem): ?>
+                    <dt class="comment-date"><?= /* @escapeNotVerified */ $block->formatDate($_historyItem->getCreatedAt(), \IntlDateFormatter::MEDIUM, true) ?></dt>
+                    <dd class="comment-content"><?= $block->escapeHtml($_historyItem->getComment()) ?></dd>
+                <?php endforeach; ?>
+            </dl>
+
+        </div>
+    </div>
+<?php endif; ?>
+
+
+
+<?php
+$objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+$resource = $objectManager->get('Magento\Framework\App\ResourceConnection');
+$coreWrite = $resource->getConnection();
+$incrementId  = $block->getOrder()->getIncrementId();
+$mt_ordersplit_package_orders = $resource->getTableName('mt_ordersplit_package_orders');
+$selectsql=("SELECT sub_order_ids FROM   `$mt_ordersplit_package_orders`  where order_id='$incrementId'" );
+$sub_order_ids = $coreWrite->fetchOne($selectsql);
+
+$childorderhtml="";
+
+$url = $objectManager->get('\Magento\Framework\UrlInterface'); 
+$sales_order = $resource->getTableName('sales_order');
+
+			foreach(explode(',',$sub_order_ids) as $corderid){
+    			$selectsql=("SELECT entity_id FROM   `$sales_order` where increment_id='$corderid' " );
+				$orderrealid = $coreWrite->fetchOne($selectsql);
+				$childorderhtml.=' <a href="'.$url->getUrl('sales/order/view/order_id/'.$orderrealid).'" target="_blank">'.$corderid.'</a> ,';
+			}
+?>
+<?php if (!empty($sub_order_ids )): ?>
+  
+	 <div class="block block-order-details-comments">
+        <div class="block-title"><strong><?= /* @escapeNotVerified */ __('Child Orders') ?></strong></div>
+        <div class="block-content">
+    <table class="data-table admin__table-secondary">
+        <tr>
+            <td>
+                <?php
+                /* @noEscape */
+                echo trim($childorderhtml,',');
+                ?>
+            </td>
+        </tr>
+    </table>
+	 </div>
+    </div>
+<?php endif;?>

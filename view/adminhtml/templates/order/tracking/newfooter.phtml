@@ -1,0 +1,44 @@
+<?php
+
+if( stristr($_SERVER['REQUEST_URI'],'admin/order_shipment/new') || stristr($_SERVER['REQUEST_URI'],'admin/sales/order_invoice/new') ) {
+?>
+<script>
+
+	var loadordersplitnew=false;
+	function initOrderSplitNew(){
+		jQuery('select.carrier').each(function(){
+		if(jQuery(this).find('.addtracking').length<=0){
+			 var html='<?php
+						
+					$path=str_replace('view'.DIRECTORY_SEPARATOR.'adminhtml'.DIRECTORY_SEPARATOR.'templates'.DIRECTORY_SEPARATOR.'order'.DIRECTORY_SEPARATOR.'tracking','Model'.DIRECTORY_SEPARATOR.'Tracking',dirname(__FILE__));
+					$objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+					
+
+					if($handle = opendir($path)){
+					  while (false !== ($file = readdir($handle))){
+						if( $file!='.' && $file!='..'){
+							$filename=str_replace('.php','',$file);
+							$tracking= $objectManager->create('Storetransform\OrderSplit\Model\Tracking\\'.$filename);
+							 echo '<option class="addtracking" value="'.$filename.'">'.$tracking->title.'</option>';
+						}
+					  }
+					  closedir($handle);
+					}
+						
+						 ?>';
+			jQuery(this).append(html);		 
+		}
+		});
+	}
+ require(
+            [
+                'jquery',
+                'prototype'
+            ], function($){
+                $(document).ready(function(){
+					loadordersplitnew =setInterval("initOrderSplitNew()",1000);
+				});
+ });
+</script>
+<?php } ?>
+

@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <event name="sales_order_place_after">
+        <observer name="OrderSplit_observer" instance="Storetransform\OrderSplit\Observer\OrderSplitObserver" />
+    </event>
+	 <event name="checkout_type_multishipping_create_orders_single">
+        <observer name="OrderSplit_observer" instance="Storetransform\OrderSplit\Observer\OrderSplitMultiObserver" />
+    </event>
+	
+	<event name="checkout_onepage_controller_success_action">
+    <observer name="OrderSplit_observersuccess" instance="Storetransform\OrderSplit\Observer\OrderSplitSuccessObserver" />
+	</event> 
+	
+</config>

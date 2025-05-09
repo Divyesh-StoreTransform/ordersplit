@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+			  <block class="Magento\Shipping\Block\Adminhtml\View" name="sales_shipment_view">
+                <block class="Magento\Shipping\Block\Adminhtml\View\Form" name="form" template="Magento_Shipping::view/form.phtml">
+					 <container name="extra_shipment_info"/>
+                    <block class="Magento\Shipping\Block\Adminhtml\Order\Tracking\View" name="shipment_tracking" template="Storetransform_OrderSplit::order/tracking/view.phtml"/>
+        		</block>
+            </block>
+        </referenceContainer>
+    </body>
+</page>

@@ -1,0 +1,42 @@
+<div id="checkout-shipping-method-load ordersplit_div">
+	<div class="ordersplit_container"  data-bind="html : loadordersplit()"></div>
+	<!-- ko if: rates().length  --><!-- ko loadordersplit() --><!-- /ko --><!-- /ko -->
+    <table class="table-checkout-shipping-method">
+        <thead>
+        <tr class="row">
+            <th class="col col-method" translate="'Select Method'"></th>
+            <th class="col col-price" translate="'Price'"></th>
+            <th class="col col-method" translate="'Method Title'"></th>
+            <th class="col col-carrier" translate="'Carrier Title'"></th>
+        </tr>
+        </thead>
+        <tbody>
+		
+			 <!-- ko if: rates().length  -->
+			 
+				<!-- ko foreach: { data: rates(), as: 'method'} -->
+					<!--ko template: { name: element.shippingMethodItemTemplate} --><!-- /ko -->
+				<!-- /ko -->
+			
+			<!-- /ko -->
+        </tbody>
+    </table>
+</div>
+<script>
+require(['jquery', 'mage/storage'],function(jQuery,storage){
+   $(document).ready(function(){ 
+   		$('.ordersplit_div .ordersplit_container').html("");
+		$('.ordersplit_div .loading').show();
+		$.ajax({
+					method : 'POST',
+                    url: "/ordersplit/process/index/?load"
+                }).done(function (response) {
+                    if (response.status=='success') {
+					$('.ordersplit_div .loading').hide();
+					$('.ordersplit_div .ordersplit_container').html(response);
+					}
+                });
+  });
+});
+
+</script>

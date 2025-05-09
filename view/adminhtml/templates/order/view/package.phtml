@@ -1,0 +1,33 @@
+<?php
+
+$childorders = $block->getAdditionalInformation();
+$childorderhtml="";
+
+$objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+$url = $objectManager->get('\Magento\Framework\UrlInterface'); 
+$resource = $objectManager->get('Magento\Framework\App\ResourceConnection');
+$core_write = $resource->getConnection();
+$sales_order = $resource->getTableName('sales_order');
+        if(!empty($childorders)){
+			foreach(explode(',',$childorders) as $corderid){
+    			$selectsql=("SELECT entity_id FROM   `$sales_order` where increment_id='$corderid' " );
+				$orderrealid = $core_write->fetchOne($selectsql);
+				$childorderhtml.=' <a href="'.$url->getUrl('sales/order/view/order_id/'.$orderrealid).'" target="_blank">'.$corderid.'</a> ,';
+			}
+        }
+?>
+<?php if (!empty($childorders)): ?>
+    <div class="admin__page-section-item-title" style="margin-top: 1.5rem">
+        <span class="title"><?php echo __("Child Orders")?></span>
+    </div>
+    <table class="data-table admin__table-secondary">
+        <tr>
+            <td>
+                <?php
+                /* @noEscape */
+                echo trim($childorderhtml,',');
+                ?>
+            </td>
+        </tr>
+    </table>
+<?php endif;?>

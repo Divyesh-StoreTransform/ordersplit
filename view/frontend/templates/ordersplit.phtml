@@ -1,0 +1,258 @@
+<?php
+
+$objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+$storeManager = $objectManager->get('Magento\Store\Model\StoreManagerInterface'); 
+$currencyCode = $storeManager->getStore()->getCurrentCurrencyCode(); 
+$baseurl=$storeManager->getStore()->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB);
+$OrderSplitModel = $objectManager->create('Storetransform\OrderSplit\Model\OrderSplit');
+$resource = $objectManager->get('Magento\Framework\App\ResourceConnection');
+$core_write = $resource->getConnection();
+$sales_order = $resource->getTableName('sales_order');
+
+$active=$objectManager->create('Storetransform\OrderSplit\Helper\Data')->getConfig('se_ordersplit/ordersplit/active');
+
+if( stristr($_SERVER['REQUEST_URI'],'checkout') && !stristr($_SERVER['REQUEST_URI'],'multishipping') ) {
+
+if($active){
+?>
+<style>
+.checkout-cart-index .cart-summary #block-shipping,.table-checkout-shipping-method{ display:none;}
+.loading{margin: 50px 50%;}
+</style>
+<script  type="text/javascript"  >
+	var loadordersplitview ='';
+	var useordersplit=true;
+	var siteBaseUrl='<?php echo $baseurl?>';
+function showpackage(){
+	var html='<div class="loader-03 loading"></div>';
+			jQuery('.ordersplit_container').html(html);
+			jQuery.ajax({
+				'url':siteBaseUrl+'/ordersplit/process/index/'+'?action=showpackage',
+				'success':function(result){
+							jQuery('.ordersplit_container').html(result);
+					 }
+			});
+}
+function initOrderSplit(){
+	if(jQuery('#checkout-shipping-method-load').length>0 && jQuery('.ordersplit_container').length<=0){
+		jQuery('#checkout-shipping-method-load').prepend('<div class="ordersplit_container" ></div>');
+		showpackage();
+	}
+	
+	if(jQuery('.opc-block-shipping-information .shipping-information').length>0){
+		if(jQuery('.opc-block-shipping-ordersplit').length<=0){
+			jQuery('.opc-block-shipping-information').append("<div class='opc-block-shipping-ordersplit'></div>");
+			var html='<div class="loader-03 loading"></div>';
+				jQuery('.opc-block-shipping-ordersplit').html(html);
+				jQuery.ajax({
+					'url':siteBaseUrl+'/ordersplit/process/index/'+'?action=showpackagedetail',
+					'success':function(result){
+								jQuery('.opc-block-shipping-ordersplit').html(result);
+						 }
+				});
+		}
+	}
+	if(jQuery('.opc-block-shipping-information .shipping-information').length<=0 && jQuery('.opc-block-shipping-ordersplit').length>0 ){
+		jQuery('.opc-block-shipping-ordersplit').remove();
+		showpackage();
+	}
+	
+	return ;
+}
+require(['jquery', 'mage/storage'],function(jQuery,storage){
+   jQuery(document).ready(function(){ 
+		loadordersplitview =setInterval("initOrderSplit()",1000);
+  });
+});
+</script>
+<?php
+
+}else{
+?>
+<script  type="text/javascript"  >
+var useordersplit=false;
+</script>
+<?php
+}
+}
+
+if( stristr($_SERVER['REQUEST_URI'],'customer/account') || stristr($_SERVER['REQUEST_URI'],'sales/order/history') ) {
+if($active){
+$customerMainOrders=$OrderSplitModel->getCustomerSubOrders();
+
+?>
+<style>
+.suborders{padding:10px; text-align:center;border: 1px solid #333; margin: 10px;position: absolute;    background: rgb(255, 255, 255);max-width: 350px;    z-index: 999;    min-width: 350px;}
+a.checksuborder{ margin-left:10px;}
+.suborders a{margin-right:10px;float:left;}
+.table-order-items tbody tr,.suborders{ display:none;}
+.table-order-items tbody tr.mainOrder{ display:table-row; background:#FFCC99;}
+.table-order-items tbody tr.mainOrder td.actions{    position: relative;}
+.table-order-items tbody tr.subOrder{ display:table-row;background:#eeeeee;}
+.table-order-items tbody tr.normalOrder{ display:table-row;background:#fff;}
+</style>
+<script  type="text/javascript"  >
+
+var siteBaseUrl='<?php echo $baseurl?>';
+var MainOrdersIds='';var AllSubOrderIds='';<?php
+			$subOrdersIds='';
+			foreach($customerMainOrders as $mainOrderId=>$childOrders){
+			echo "MainOrdersIds+='".$mainOrderId.",';";
+			echo "AllSubOrderIds+='".$childOrders.",';";
+			$childorderhtml="";
+			foreach(explode(',',$childOrders) as $corderid){
+    			$selectsql=("SELECT entity_id FROM   `$sales_order` where increment_id='$corderid' " );
+				$orderrealid = $core_write->fetchOne($selectsql);
+				$childorderhtml.='<a href="'.$baseurl.'sales/order/view/order_id/'.$orderrealid.'" target="_blank">'.$corderid.'</a> ';
+			}
+			echo "var MainOrdersIdsAllSubOrderIds_".$mainOrderId."='".$childorderhtml."';";
+			$subOrdersIds.="'".$mainOrderId."':'".$childOrders."',";
+			}
+			echo "var mainOrderObj={".trim($subOrdersIds,',')."};";
+			?>
+
+function viewsuborders(orderId){
+	if(jQuery('.suborderdetails_'+orderId).length>0){
+		jQuery('.suborderdetails_'+orderId).toogle();
+		return;
+	}
+	var html='<div class="suborderdetails suborderdetails_'+orderId+'"><div class="loader-03 loading"></div></div>';
+	jQuery('.viewsuborders_'+orderId).after(html);
+	jQuery.ajax({
+				'url':siteBaseUrl+'/ordersplit/process/index/'+'?action=showsuborders&order_id='+orderId,
+				'success':function(result){
+							jQuery('.suborderdetails_'+orderId).html(result);
+				}
+	});
+}
+function showsuborders(orderid){
+	jQuery('.suborders'+orderid).toggle();
+}
+function suborderhtml(suborders){
+	var suborderids=suborders.split(',');
+	var html='';
+	for(i=0;i<suborderids.length;i++){
+		var links=jQuery('.Orderlist_'+suborderids[i]+' a.view').attr('href');
+		html+='<a href="'+links+'">'+suborderids[i]+'</a>';
+	}
+	return html;
+}
+require(['jquery', 'mage/storage'],function(jQuery,storage){
+  jQuery(document).ready(function(){ 
+		jQuery('.table-order-items tbody tr').each(function(){
+			var orderid=jQuery(this).find('.col.id').html();
+			jQuery(this).addClass('Orderlist_'+orderid);
+			if(MainOrdersIds.indexOf(orderid+',')>=0){
+			
+			jQuery(this).addClass('mainOrder').find('.col.actions').append('<span calss="type"><?php echo __("(Main Order)");?></span><a calss=" checksuborder" style="margin-left:10px;" href="javascript:showsuborders(\''+orderid+'\')"><?php echo __("Child Orders");?></a><div class="suborders suborders'+orderid+'">'+(eval('MainOrdersIdsAllSubOrderIds_'+orderid))+'</div>');
+			}
+			else{
+			if(AllSubOrderIds.indexOf(orderid+',')>=0){
+			jQuery(this).addClass('subOrder').find('.col.actions').append('<span calss="type"><?php echo __("(Child Order)");?></span>');;
+			}else
+			jQuery(this).addClass('normalOrder');
+			}
+		});
+  });
+});
+</script>
+<?php
+}
+}
+
+
+if( stristr($_SERVER['REQUEST_URI'],'multishipping/checkout/shipping') ) {
+
+if($active){
+?>
+<style>
+.methods-shipping{ display:none;}
+.loading{margin: 50px 50%;}
+</style>
+<script  type="text/javascript"  >
+	var loadordersplitview ='';
+	var useordersplit=true;
+	var siteBaseUrl='<?php echo $baseurl?>';
+function initOrderSplit(){
+	var html='<div class="loader-03 loading"></div>';
+	jQuery('.block-shipping').each(function(){
+		if( jQuery(this).find('.ordersplit_container').length<=0){
+		
+		var addressId=jQuery(this).find('.methods-shipping input[value="mtordersplit_mtordersplit"]').attr('name').replace('shipping_method[','').replace(']','');
+		jQuery(this).find('.box-shipping-method .box-content').prepend('<div class="ordersplit_container ordersplit_container_'+addressId+'" ></div>');
+		
+		var target=jQuery(this).find('.ordersplit_container');
+		target.html(html);
+			jQuery.ajax({
+				'url':siteBaseUrl+'/ordersplit/process/index/'+'?action=multishowpackage&addressId='+addressId,
+				'success':function(result){
+							target.html(result);
+					 }
+			});
+		}
+	});
+	
+			
+}
+require(['jquery', 'mage/storage'],function(jQuery,storage){
+   jQuery(document).ready(function(){ 
+		initOrderSplit();
+  });
+});
+</script>
+<?php
+
+}else{
+?>
+<script  type="text/javascript"  >
+var useordersplit=false;
+</script>
+<?php
+}
+}
+
+
+if( stristr($_SERVER['REQUEST_URI'],'multishipping/checkout/overview') ) {
+
+if($active){
+?>
+<style>
+.loading{margin: 50px 50%;}
+</style>
+<script  type="text/javascript"  >
+	var useordersplit=true;
+	var siteBaseUrl='<?php echo $baseurl?>';
+require(['jquery', 'mage/storage'],function(jQuery,storage){
+   jQuery(document).ready(function(){ 
+		jQuery('.block-shipping .block-content').each(function(){
+			if(jQuery(this).find('.opc-block-shipping-ordersplit').length<=0){
+				jQuery(this).find('.box-shipping-method').append("<div class='opc-block-shipping-ordersplit'></div>");
+				var html='<div class="loader-03 loading"></div>';
+				var target=jQuery(this).find('.opc-block-shipping-ordersplit');
+				var addressId=jQuery(this).find('.table-order-review').attr('id').replace('overview-table-','');
+					target.html(html);
+					
+					jQuery.ajax({
+						'url':siteBaseUrl+'/ordersplit/process/index/'+'?action=showmultipackagedetail&addressId='+addressId,
+						'success':function(result){
+									target.html(result);
+							 }
+					});
+			}
+ 	 });
+});
+});
+</script>
+<?php
+}else{
+?>
+<script  type="text/javascript"  >
+var useordersplit=false;
+</script>
+<?php
+}
+}
+
+?>
+	
+	

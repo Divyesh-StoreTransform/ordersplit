@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <storetransform_ordersplit>
+            <general>
+                <debug>0</debug>
+            </general>
+        </storetransform_ordersplit>
+
+        <carriers>
+            <mtordersplit>
+                <active>1</active>
+                <sallowspecific>0</sallowspecific>
+                <price>0</price>
+                <model>Storetransform\OrderSplit\Model\Carrier\OrderSplit</model>
+                <name></name>
+                <title>Order Split Shipping</title>
+            </mtordersplit>
+        </carriers>
+
+    </default>
+</config>

@@ -1,0 +1,222 @@
+<?php
+
+$objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+$storeManager = $objectManager->get('\Magento\Store\Model\StoreManagerInterface');
+$OrderSplitModel= $objectManager->create('Storetransform\OrderSplit\Model\OrderSplit');
+$baseurl=$storeManager->getStore()->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB);
+$resource = $objectManager->get('Magento\Framework\App\ResourceConnection');
+$core_write = $resource->getConnection();
+ 
+$ajaxurl=$baseurl.'/ordersplit/process/index/';
+$keyObject = $objectManager->get('Magento\Framework\Data\Form\FormKey'); 
+$formKey = $keyObject->getFormKey();
+$msg=$susccessmsg="";
+$allshipping=$OrderSplitModel->getAllShipping();
+?>
+
+<style>
+.shipping_rule{margin: 10px 0px;border:1px solid #ccc}
+.loading{ text-align:center; margin:10px;}
+.shipping_rule h2{background: #eee;    padding: 10px;    font-weight: bold;  text-align: center;}
+.shipping_rule .field{margin:10px 0px; padding:10px;}
+.shipping_rule .field span{ width:200px;display: inline-block;    font-weight: bold;}
+.shipping_rule .product_line .productfield span{display:inline}
+.shipping_rule .field select{ width:200px; padding:10px;}
+.shipping_rule .field input{ width:300px; padding:10px;}
+.shipping_rule .furl input{width:800px;max-width:100%;}
+.shipping_rule .field .desc{ font-style:italic;margin-top:10px;}
+.shipping_rule .product_content{    max-height: 500px; overflow: auto;}
+.shipping_rule .products { border: 1px solid #ccc; padding: 0px; margin: 10px;}
+.shipping_rule .products .heading {background: #eee;    font-weight: bold;}
+.shipping_rule .products .product_line {margin-bottom:2px;}
+.shipping_rule .products .product_line .name{ text-align:left}
+.shipping_rule .products .productfield{ display: inline-block;    width: 16%;    text-align: center;    padding: 5px;    margin: 2px 0px;}
+.shipping_rule .products .product_line input{width:150px; text-align:center}
+.shipping_rule .products .product_line input[type="checkbox"]{width:20px;height:20px;}
+.shipping_rule .btn{ text-align:center; margin:10px;}
+.shipping_rule .btn button{width:150px;}
+.msg{    text-align: center;   margin:10px; padding: 10px;    background: #f7fdde;}
+.friendrules{width:100%;}
+.friendrules td{ text-align:center; padding:10px;;font-size:14px;}
+.friendrules .headingtitle{ background:#d2d2d2;font-size:15px;font-weight:bold;color:#000}
+.friendrules span{ font-weight:bold;}
+.newfriendrule{ background:#fffbbb}
+.newfriendrule .actions label{ display:block; text-align: left; margin: 20px;}
+.friendrule img{height:100px;}
+.customerfield{ display:inline-block; text-align:center}
+.customerfield span{ font-weight: bold; }
+.customerfield span,.customerfield select{padding:10px;    display: block;margin: 0px 20px;}
+.customerrelation{ padding:30px 0px; }
+.selected{ background:#d7e9ff}
+.searchno{ display:none}
+.searchyes{ display:block}
+.filterheading{ }
+@media screen and (max-width: 768px) {
+	
+}
+</style>
+
+
+<div class="">
+	<?php
+	if($msg!="")
+	echo '<div class="message message-warning "><div>'.$msg.'</div></div>';
+	if($susccessmsg!="")
+	echo '<div class="message message-success "><div>'.$susccessmsg.'</div></div>';
+	?>
+	<div class="sections">
+		 <form id="form_request_rule" action="<?php echo $this->getUrl('ordersplit/rule')?>" title="" method="post">
+		 <input name="form_key" value="<?php echo $formKey;?>" type="hidden" />
+		 <input name="action" id="action" type="hidden" value="create" />
+		 <input name="rid" id="rid" type="hidden" value="" />
+		<table class="friendrules" border="1" cellpadding="3" cellspacing="3">
+			<tr class="headingtitle">
+				<td><?php echo __('Shipping');?></td>
+				<td><?php echo __('Action');?></td>
+			</tr>
+		
+			<?php
+				foreach($allshipping as $shipping){
+					if($shipping['code']!='mtordersplit_mtordersplit')
+					echo '<tr class="friendrule shippingrule_'.$shipping['code'].'">
+							<td class="shipping_name">'.$shipping['name'].'</td>
+							<td><button class="action-default scalable primary" onclick="return manageshipping(\''.$shipping['code'].'\')">'.__('Manage').'</button></td>
+						</tr>';
+				}
+			?>
+			
+			
+		</table>
+		</form>
+	</div>
+</div>
+<div class="loading" style="display:none"><?php echo __("Loading")?></div>
+<div id="rule_sections"></div>
+<div id="msg_sections"></div>
+
+
+<script type="text/javascript">
+	var ajaxurl="<?php echo $ajaxurl?>";
+	
+    require(
+            [
+                'jquery',
+                'prototype'
+            ], function($){
+                $(document).ready(function(){
+					
+				});
+            });
+			
+	function checkall(chk){
+		jQuery('.product_content .product_line ').each(function(){
+				jQuery(this).find('.allow input').prop('checked',chk);
+				seletedproduct(jQuery(this).find('.pid').html(),chk);
+		});
+	}
+	
+	function searchbutton(event){
+		// onkeydown="return searchkeyword();" '
+		 var evt = window.event || e; 
+		  if (evt.keyCode == 13){
+			searchkeyword();
+			return false;
+		}
+		
+	}
+	function resetfilter(){
+		jQuery("#product_search_name").val("");
+		jQuery("#product_search_sku").val("");
+		jQuery('.product_content .product_line ').removeClass("searchyes").removeClass("searchno");
+		return false;
+	}
+	function searchkeyword(){
+		var keywordname=jQuery("#product_search_name").val();
+		var keywordsku=jQuery("#product_search_sku").val();
+		if(keywordname=="" && keywordsku=="") return false;
+		jQuery('.product_content .product_line ').removeClass("searchyes").addClass("searchno");
+		jQuery('.product_content .product_line ').each(function(){
+				if((keywordname!="" && jQuery(this).find('.name label span').html().indexOf(keywordname)>=0) || (keywordsku!="" && jQuery(this).find('.sku label span').html().indexOf(keywordsku)>=0)){
+					jQuery(this).addClass("searchyes");
+				}
+		});
+		 return false;
+	}
+			
+	function manageshipping(shipping){
+		var loading='<div class="loading"><?php echo __("Loading")?></div>';
+		jQuery('#rule_sections').html(loading);
+		jQuery.ajax({
+			'url':ajaxurl+'?action=loadrule&shipping='+shipping+'&shipping_title='+jQuery('.shippingrule_'+shipping+' .shipping_name').html(),
+			'success':function(result){
+   						jQuery('#rule_sections').html(result);
+ 				 }
+		});
+		
+		return false;
+	}
+	function seletedproduct(pid,chk){
+		if(chk){
+			jQuery('.product_line_'+pid).addClass('selected');
+			jQuery('.product_line_'+pid+' .relate').removeAttr("disabled");
+		}else{
+			jQuery('.product_line_'+pid).removeClass('selected');
+			jQuery('.product_line_'+pid+' .relate').attr("disabled","disabled");
+		}
+	}
+	function saverule(shipping){
+		if(jQuery('.msg').length>0)jQuery('.msg').remove();
+		var loading='<div class="msg"><div class="loading"><?php echo __("Loading")?></div></div>';
+		jQuery('.shipping_rule').append(loading);
+		jQuery.post({
+			'url':ajaxurl+'?action=saverule&shipping='+shipping,
+			'data':jQuery('#form_rule_'+shipping).serialize(),
+			'success':function(result){
+   						jQuery('.msg').html(result);
+ 				 }
+		});
+		
+		return false;
+	}
+	function changeparent(){
+		var  cid=jQuery('#customer_id').val();
+		var parentid=jQuery('#customer_id option:selected').data('parentid');
+		
+		jQuery('#parent_id').val(parentid);
+		
+		
+	}		
+	function changevip(){
+		var  cid=jQuery('#customer_id2').val();
+		var vip=jQuery('#customer_id2 option:selected').data('vip');
+		if(vip==1)
+		jQuery('#is_vip').attr("checked", true);
+		else
+		jQuery('#is_vip').attr("checked", false);
+		
+	}		
+	
+	function approverequest(cid){
+		jQuery('#requestcustomer_id').val(cid);
+		jQuery('#appdel').val("approve");
+		jQuery('#form_request_partnerrequests').submit();
+		return false;
+	}
+	
+	function deleterequest(cid){
+		if(confirm('<?php echo __('Confrim to delete?')?>')){
+		jQuery('#requestcustomer_id').val(cid);
+		jQuery('#appdel').val("delete");
+		jQuery('#form_request_partnerrequests').submit();
+		}
+		return false;
+	}
+	
+	function removecp(vid){
+		jQuery('#action').val('remove');
+		jQuery('#rid').val(vid);
+		jQuery('#form_request_friend').submit();
+		return false;
+	}
+
+</script>
